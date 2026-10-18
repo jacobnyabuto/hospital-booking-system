@@ -1,5 +1,7 @@
 import express from "express";
 import helmet from "helmet";
+import { getDbStatus } from "./config/db.js";
+
 
 const app = express();
 
@@ -11,8 +13,12 @@ app.use(express.json({ limit: "10kb" }));
 
 // 3. Routes
 app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
+  const database = getDbStatus();
+  const healthy = database === "connected";
+
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? "ok" : "degraded",
+    database,
     uptimeSeconds: Math.round(process.uptime()),
     timestamp: new Date().toISOString(),
   });
