@@ -62,3 +62,30 @@ export const register = asyncHandler(async (req, res) => {
   // res.json calls user.toJSON(), which removes passwordHash and __v
   res.status(201).json({ token: signToken(user), user });
 });
+
+// Compared against when the email doesn't exist, so both failures take equally long
+const DUMMY_HASH = bcrypt.hashSync("not-a-real-password-for-timing", 10);
+
+export const login = asyncHandler(async (req, res) => {
+  const body = pick(req.body, ["email", "password"]);
+
+  const errors = [];
+  const email = requireString(body.email, "email", errors, { max: 254, label: "Email" });
+  if (typeof body.password !== "string" || body.password.length === 0) {
+    errors.push({ field: "password", message: "Password is required" });
+  } else if (body.password.length > 200) {
+    errors.push({ field: "password", message: "Password is too long" });
+  }
+  throwIfErrors(errors);
+
+  const user = await User.findOne({ email: email.toLowerCase() }).select("+passwordHash");
+
+  // Always run one bcrypt comparison, whether or not the user exists
+  const matches = await bcrypt.compare(body.password, user ? user.passwordHash : DUMMY_HASH);
+
+  if (!user || !matches) {
+    throw new ApiError(401, "Invalid email or password");
+  }
+
+  res.status(200).json({ token: signToken(user), user });
+});
