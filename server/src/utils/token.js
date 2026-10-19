@@ -16,3 +16,8 @@ export function signToken(user) {
     algorithm: "HS256",
   });
 }
+
+// Throws if the token is malformed, tampered with, or expired
+export function verifyToken(token) {
+  return jwt.verify(token, getSecret(), { algorithms: ["HS256"] });
+}

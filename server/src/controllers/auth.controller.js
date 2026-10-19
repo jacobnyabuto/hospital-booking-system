@@ -89,3 +89,38 @@ export const login = asyncHandler(async (req, res) => {
 
   res.status(200).json({ token: signToken(user), user });
 });
+
+export const getMe = asyncHandler(async (req, res) => {
+  res.status(200).json(req.user);
+});
+
+export const updateMe = asyncHandler(async (req, res) => {
+  // Only these two fields can ever change. Email and role are not in the list.
+  const body = pick(req.body, ["name", "insurerName"]);
+
+  const errors = [];
+  const name = body.name === undefined
+    ? undefined
+    : requireString(body.name, "name", errors, { min: 2, max: 80, label: "Name" });
+
+  // An empty string is allowed for insurerName: it clears the field
+  let insurerName;
+  if (body.insurerName !== undefined) {
+    if (body.insurerName === "") {
+      insurerName = "";
+    } else {
+      insurerName = requireString(body.insurerName, "insurerName", errors, { max: 80, label: "Insurer name" });
+    }
+  }
+
+  if (body.name === undefined && body.insurerName === undefined) {
+    errors.push({ field: "body", message: "Provide name or insurerName" });
+  }
+  throwIfErrors(errors);
+
+  if (name !== undefined) req.user.name = name;
+  if (insurerName !== undefined) req.user.insurerName = insurerName;
+  await req.user.save();
+
+  res.status(200).json(req.user);
+});
