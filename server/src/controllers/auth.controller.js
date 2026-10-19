@@ -1,0 +1,64 @@
+import bcrypt from "bcryptjs";
+import User from "../models/User.js";
+import ApiError from "../utils/ApiError.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import { signToken } from "../utils/token.js";
+import { pick, requireString, optionalString, throwIfErrors } from "../utils/validate.js";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Passwords are never trimmed. bcrypt only reads the first 72 bytes.
+function checkPassword(value, errors) {
+  if (typeof value !== "string" || value.length === 0) {
+    errors.push({ field: "password", message: "Password is required" });
+    return undefined;
+  }
+  if (value.length < 8) {
+    errors.push({ field: "password", message: "Password must be at least 8 characters" });
+    return undefined;
+  }
+  if (Buffer.byteLength(value, "utf8") > 72) {
+    errors.push({ field: "password", message: "Password must be at most 72 bytes" });
+    return undefined;
+  }
+  return value;
+}
+
+export const register = asyncHandler(async (req, res) => {
+  // Whitelist: a "role" sent by the client is dropped here
+  const body = pick(req.body, ["name", "email", "password", "insurerName"]);
+
+  const errors = [];
+  const name = requireString(body.name, "name", errors, { min: 2, max: 80, label: "Name" });
+  const email = requireString(body.email, "email", errors, { max: 254, label: "Email" });
+  if (email && !EMAIL_PATTERN.test(email)) {
+    errors.push({ field: "email", message: "Email is not valid" });
+  }
+  const password = checkPassword(body.password, errors);
+  const insurerName = optionalString(body.insurerName, "insurerName", errors, {
+    max: 80,
+    label: "Insurer name",
+  });
+  throwIfErrors(errors);
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  let user;
+  try {
+    user = await User.create({
+      name,
+      email, // the model lowercases it
+      passwordHash,
+      role: "patient", // always. Public registration can never create a doctor.
+      insurerName: insurerName ?? "",
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      throw new ApiError(409, "An account with this email already exists");
+    }
+    throw error;
+  }
+
+  // res.json calls user.toJSON(), which removes passwordHash and __v
+  res.status(201).json({ token: signToken(user), user });
+});

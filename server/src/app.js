@@ -3,6 +3,7 @@ import helmet from "helmet";
 import { getDbStatus } from "./config/db.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import doctorRoutes from "./routes/doctor.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+app.use("/api/auth", authRoutes);
 app.use("/api/doctors", doctorRoutes);
 
 // 4. Not found: runs only if no route above answered
