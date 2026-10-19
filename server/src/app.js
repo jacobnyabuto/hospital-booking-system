@@ -1,7 +1,7 @@
 import express from "express";
 import helmet from "helmet";
 import { getDbStatus } from "./config/db.js";
-
+import { notFound, errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 
@@ -25,24 +25,9 @@ app.get("/api/health", (req, res) => {
 });
 
 // 4. Not found: runs only if no route above answered
-app.use((req, res) => {
-  res.status(404).json({ error: "Route not found" });
-});
+app.use(notFound);
 
-// 5. Central error handler: must have exactly 4 parameters
-// eslint-disable-next-line no-unused-vars
-app.use((err, req, res, next) => {
-  // Malformed JSON from the client is a 400, not a server fault
-  if (err.type === "entity.parse.failed") {
-    return res.status(400).json({ error: "Malformed JSON in request body" });
-  }
-  if (err.type === "entity.too.large") {
-    return res.status(413).json({ error: "Request body too large" });
-  }
-
-  // Log a short message for us, but never send details to the user
-  console.error("Unhandled error:", err.name, err.message);
-  res.status(500).json({ error: "Something went wrong on the server" });
-});
+// 5. Central error handler: always last
+app.use(errorHandler);
 
 export default app;
