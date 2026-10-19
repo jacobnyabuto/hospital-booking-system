@@ -1,4 +1,5 @@
 import Doctor, { SPECIALTIES } from "../models/Doctor.js";
+import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { optionalString, escapeRegex, throwIfErrors } from "../utils/validate.js";
 
@@ -32,4 +33,15 @@ export const listDoctors = asyncHandler(async (req, res) => {
     .lean();
 
   res.status(200).json(doctors);
+});
+
+export const getDoctor = asyncHandler(async (req, res) => {
+  // The ID format was already checked by validateObjectId in the route
+  const doctor = await Doctor.findOne({ _id: req.params.id, isActive: true })
+    .select(PUBLIC_DOCTOR_FIELDS)
+    .lean();
+
+  if (!doctor) throw new ApiError(404, "Doctor not found");
+
+  res.status(200).json(doctor);
 });
