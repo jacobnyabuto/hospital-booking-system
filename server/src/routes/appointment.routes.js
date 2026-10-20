@@ -6,6 +6,7 @@ import {
   getAppointment,
   rescheduleMyAppointment,
   cancelMyAppointment,
+  changeAppointmentStatus,
 } from "../controllers/appointment.controller.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
 import validateObjectId from "../middleware/validateObjectId.js";
@@ -20,6 +21,7 @@ router.get("/doctor/mine", authenticate, requireRole("doctor"), listDoctorAppoin
 
 router.get("/:id", authenticate, validateObjectId("id"), getAppointment);
 router.patch("/:id", authenticate, requireRole("patient"), validateObjectId("id"), rescheduleMyAppointment);
+router.patch("/:id/status", authenticate, requireRole("doctor"), validateObjectId("id"), changeAppointmentStatus);
 router.delete("/:id", authenticate, requireRole("patient"), validateObjectId("id"), cancelMyAppointment);
 
 export default router;

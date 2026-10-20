@@ -5,8 +5,8 @@ import {
   createAppointment,
   rescheduleAppointment,
   cancelAppointmentAsPatient,
-} from "../services/appointmentService.js";
-import { getDoctorProfileId, assertCanAccess } from "../utils/ownership.js";
+  changeStatusAsDoctor,
+} from "../services/appointmentService.js";import { getDoctorProfileId, assertCanAccess } from "../utils/ownership.js";
 import ApiError from "../utils/ApiError.js";
 import { optionalString, throwIfErrors } from "../utils/validate.js";
 
@@ -100,4 +100,15 @@ export const rescheduleMyAppointment = asyncHandler(async (req, res) => {
 export const cancelMyAppointment = asyncHandler(async (req, res) => {
   const appointment = await cancelAppointmentAsPatient({ user: req.user, id: req.params.id });
   res.status(200).json(patientView(appointment));
+});
+
+export const changeAppointmentStatus = asyncHandler(async (req, res) => {
+  const appointment = await changeStatusAsDoctor({
+    user: req.user, id: req.params.id, body: req.body,
+  });
+  const patient = await User.findById(appointment.patient).select("name").lean();
+
+  const view = appointment.toJSON();
+  view.patient = { _id: appointment.patient, name: patient ? patient.name : "Unknown" };
+  res.status(200).json(view);
 });

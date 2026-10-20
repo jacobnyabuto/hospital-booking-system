@@ -6,8 +6,7 @@ import {
   pick, requireObjectId, requireString, throwIfErrors, failValidation,
 } from "../utils/validate.js";
 import { buildDaySlots, getClinicTimezone } from "./slotService.js";
-import { assertPatientOwner } from "../utils/ownership.js";
-
+import { assertPatientOwner, assertDoctorOwner, getDoctorProfileId } from "../utils/ownership.js";
 export const MAX_DAYS_AHEAD = 90;
 export const MAX_ACTIVE_APPOINTMENTS = 10;
 
@@ -173,5 +172,40 @@ export async function cancelAppointmentAsPatient({ user, id }) {
   appointment.status = "cancelled";
   appointment.cancelledBy = "patient";
   await appointment.save(); // the hook sets holdsSlot to false, freeing the slot
+  return appointment;
+}
+
+const DOCTOR_TRANSITIONS = {
+  pending: ["confirmed", "cancelled"],
+  confirmed: ["cancelled", "completed"],
+};
+const DOCTOR_TARGETS = ["confirmed", "cancelled", "completed"];
+
+export async function changeStatusAsDoctor({ user, id, body, now = new Date() }) {
+  const appointment = await Appointment.findById(id);
+  if (!appointment) throw new ApiError(404, "Appointment not found");
+
+  const profileId = await getDoctorProfileId(user);
+  assertDoctorOwner(appointment, user, profileId);
+
+  const input = pick(body, ["status"]);
+  const errors = [];
+  const status = requireString(input.status, "status", errors, { max: 20, label: "Status" });
+  if (status && !DOCTOR_TARGETS.includes(status)) {
+    errors.push({ field: "status", message: `status must be one of: ${DOCTOR_TARGETS.join(", ")}` });
+  }
+  throwIfErrors(errors);
+
+  const allowed = DOCTOR_TRANSITIONS[appointment.status] || [];
+  if (!allowed.includes(status)) {
+    throw new ApiError(409, `Cannot change a ${appointment.status} appointment to ${status}`);
+  }
+  if (status === "completed" && appointment.startTime.getTime() > now.getTime()) {
+    throw new ApiError(409, "An appointment can only be completed after its start time");
+  }
+
+  appointment.status = status;
+  if (status === "cancelled") appointment.cancelledBy = "doctor";
+  await appointment.save(); // the hook frees the slot when cancelled
   return appointment;
 }
