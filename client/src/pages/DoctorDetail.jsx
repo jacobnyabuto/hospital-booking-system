@@ -4,6 +4,8 @@ import { Row, Col, Card, Badge, Button, Alert, Spinner, ListGroup } from "react-
 import { getDoctor } from "../services/doctorService.js";
 import { specialtyLabel } from "../constants/specialties.js";
 import { formatWorkingDays, formatClock } from "../utils/format.js";
+import SlotPicker from "../components/SlotPicker.jsx";
+import { formatClinicDateTime } from "../utils/dates.js";
 
 export default function DoctorDetail() {
   const { id } = useParams();
@@ -12,6 +14,7 @@ export default function DoctorDetail() {
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -113,10 +116,14 @@ export default function DoctorDetail() {
                 </ListGroup.Item>
                 <ListGroup.Item>Appointments are {doctor.slotMinutes} minutes</ListGroup.Item>
               </ListGroup>
-              <Button variant="primary" className="w-100" disabled>
-                Log in to book
-              </Button>
-              <p className="small text-muted mt-2 mb-0">Login and booking are added in the next steps.</p>
+                            <h3 className="h6">Pick a time</h3>
+              <SlotPicker doctorId={id} selected={selectedSlot} onSelect={setSelectedSlot} />
+              {selectedSlot && (
+                <p className="mt-3 mb-0">
+                  Selected: <strong>{formatClinicDateTime(selectedSlot)}</strong>
+                </p>
+              )}
+              <p className="small text-muted mt-2 mb-0">The booking form is added in the next mini-step.</p>
             </Card.Body>
           </Card>
         </Col>

@@ -14,3 +14,10 @@ export function listDoctors(filters = {}, options = {}) {
 export function getDoctor(id, options = {}) {
   return api.get(`/doctors/${encodeURIComponent(id)}`, { auth: false, ...options });
 }
+
+export function getDoctorSlots(id, date, options = {}) {
+  return api.get(`/doctors/${encodeURIComponent(id)}/slots?date=${encodeURIComponent(date)}`, {
+    auth: false,
+    ...options,
+  });
+}
