@@ -1,0 +1,229 @@
+{
+  "info": {
+    "name": "Hospital Booking System API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Run requests top to bottom. Fill patientPassword and doctorPassword on the Variables tab (do not export them)."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "patientPassword", "value": "" },
+    { "key": "doctorPassword", "value": "" },
+    { "key": "patientToken", "value": "" },
+    { "key": "doctorToken", "value": "" },
+    { "key": "doctorId", "value": "" },
+    { "key": "appointmentId", "value": "" },
+    { "key": "slotTime", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check (expect 200)",
+          "auth": { "type": "noauth" },
+          "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login patient (expect 200)",
+          "auth": { "type": "noauth" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('patientToken', pm.response.json().token);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"demo.patient@hospital-demo.test\",\n  \"password\": \"{{patientPassword}}\"\n}" }
+          }
+        },
+        {
+          "name": "Login doctor (expect 200)",
+          "auth": { "type": "noauth" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('doctorToken', pm.response.json().token);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"priya.nair@hospital-demo.test\",\n  \"password\": \"{{doctorPassword}}\"\n}" }
+          }
+        },
+        {
+          "name": "Login wrong password (expect 401)",
+          "auth": { "type": "noauth" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401', () => pm.response.to.have.status(401));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"demo.patient@hospital-demo.test\",\n  \"password\": \"wrong-password\"\n}" }
+          }
+        },
+        {
+          "name": "Me with patient token (expect 200)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" }
+        },
+        {
+          "name": "Me without token (expect 401)",
+          "auth": { "type": "noauth" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401', () => pm.response.to.have.status(401));"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" }
+        }
+      ]
+    },
+    {
+      "name": "Doctors",
+      "item": [
+        {
+          "name": "List doctors (expect 200)",
+          "auth": { "type": "noauth" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "const d = pm.response.json().find(x => x.fullName === 'Dr. Priya Nair');",
+            "pm.collectionVariables.set('doctorId', d._id);"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/doctors" }
+        },
+        {
+          "name": "Filter by specialty (expect 200)",
+          "auth": { "type": "noauth" },
+          "request": { "method": "GET", "url": "{{baseUrl}}/doctors?specialty=cardiology" }
+        },
+        {
+          "name": "Invalid specialty (expect 400)",
+          "auth": { "type": "noauth" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/doctors?specialty=magic" }
+        },
+        {
+          "name": "Get one doctor (expect 200)",
+          "auth": { "type": "noauth" },
+          "request": { "method": "GET", "url": "{{baseUrl}}/doctors/{{doctorId}}" }
+        },
+        {
+          "name": "Unknown doctor (expect 404)",
+          "auth": { "type": "noauth" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('404', () => pm.response.to.have.status(404));"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/doctors/000000000000000000000000" }
+        },
+        {
+          "name": "Slots for a date (expect 200, edit the date)",
+          "auth": { "type": "noauth" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "const s = pm.response.json().slots.find(x => x.available);",
+            "if (s) pm.collectionVariables.set('slotTime', s.startTime);"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/doctors/{{doctorId}}/slots?date=2026-12-14" }
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "item": [
+        {
+          "name": "Book as patient (expect 201)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('appointmentId', pm.response.json()._id);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/appointments",
+            "body": { "mode": "raw", "raw": "{\n  \"doctorId\": \"{{doctorId}}\",\n  \"startTime\": \"{{slotTime}}\",\n  \"reason\": \"Fake Postman test reason\"\n}" }
+          }
+        },
+        {
+          "name": "Book same slot again (expect 409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('409', () => pm.response.to.have.status(409));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/appointments",
+            "body": { "mode": "raw", "raw": "{\n  \"doctorId\": \"{{doctorId}}\",\n  \"startTime\": \"{{slotTime}}\",\n  \"reason\": \"Fake Postman test reason\"\n}" }
+          }
+        },
+        {
+          "name": "Book as doctor (expect 403)",
+          "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{doctorToken}}", "type": "string" }] },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('403', () => pm.response.to.have.status(403));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/appointments",
+            "body": { "mode": "raw", "raw": "{\n  \"doctorId\": \"{{doctorId}}\",\n  \"startTime\": \"{{slotTime}}\",\n  \"reason\": \"x\"\n}" }
+          }
+        },
+        {
+          "name": "My appointments (expect 200)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/appointments/mine" }
+        },
+        {
+          "name": "Get one appointment (expect 200)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/appointments/{{appointmentId}}" }
+        },
+        {
+          "name": "Doctor's appointments (expect 200)",
+          "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{doctorToken}}", "type": "string" }] },
+          "request": { "method": "GET", "url": "{{baseUrl}}/appointments/doctor/mine" }
+        },
+        {
+          "name": "Doctor confirms (expect 200)",
+          "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{doctorToken}}", "type": "string" }] },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/appointments/{{appointmentId}}/status",
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"confirmed\"\n}" }
+          }
+        },
+        {
+          "name": "Patient cancels (expect 200)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('cancelled', () => pm.expect(pm.response.json().status).to.eql('cancelled'));"
+          ] } }],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/appointments/{{appointmentId}}" }
+        },
+        {
+          "name": "Cancel again (expect 409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('409', () => pm.response.to.have.status(409));"
+          ] } }],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/appointments/{{appointmentId}}" }
+        }
+      ]
+    }
+  ]
+}
