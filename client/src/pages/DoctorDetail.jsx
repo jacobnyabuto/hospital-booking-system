@@ -6,6 +6,7 @@ import { specialtyLabel } from "../constants/specialties.js";
 import { formatWorkingDays, formatClock } from "../utils/format.js";
 import SlotPicker from "../components/SlotPicker.jsx";
 import { formatClinicDateTime } from "../utils/dates.js";
+import BookingForm from "../components/BookingForm.jsx";
 
 export default function DoctorDetail() {
   const { id } = useParams();
@@ -15,6 +16,7 @@ export default function DoctorDetail() {
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -116,14 +118,20 @@ export default function DoctorDetail() {
                 </ListGroup.Item>
                 <ListGroup.Item>Appointments are {doctor.slotMinutes} minutes</ListGroup.Item>
               </ListGroup>
-                            <h3 className="h6">Pick a time</h3>
-              <SlotPicker doctorId={id} selected={selectedSlot} onSelect={setSelectedSlot} />
-              {selectedSlot && (
-                <p className="mt-3 mb-0">
-                  Selected: <strong>{formatClinicDateTime(selectedSlot)}</strong>
-                </p>
-              )}
-              <p className="small text-muted mt-2 mb-0">The booking form is added in the next mini-step.</p>
+                                          <h3 className="h6">Pick a time</h3>
+              <SlotPicker
+                doctorId={id}
+                selected={selectedSlot}
+                onSelect={setSelectedSlot}
+                refreshKey={refreshKey}
+              />
+              <hr />
+              <BookingForm
+                doctor={doctor}
+                slot={selectedSlot}
+                onBooked={() => setRefreshKey((n) => n + 1)}
+                onConflict={() => setRefreshKey((n) => n + 1)}
+              />
             </Card.Body>
           </Card>
         </Col>

@@ -6,7 +6,7 @@ import {
 } from "../utils/dates.js";
 
 // onSelect receives the chosen slot's startTime (ISO string), or null when cleared
-export default function SlotPicker({ doctorId, selected, onSelect }) {
+export default function SlotPicker({ doctorId, selected, onSelect, refreshKey = 0 }) {
   const today = clinicDateString();
   const [date, setDate] = useState("");
   const [slots, setSlots] = useState([]);
@@ -39,7 +39,7 @@ export default function SlotPicker({ doctorId, selected, onSelect }) {
     return () => controller.abort();
     // onSelect is intentionally left out: it is a state setter from the parent
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doctorId, date, attempt]);
+    }, [doctorId, date, attempt, refreshKey]);
 
   const available = slots.filter((s) => s.available);
 
