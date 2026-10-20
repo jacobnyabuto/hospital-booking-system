@@ -1,7 +1,11 @@
 import Appointment, { APPOINTMENT_STATUSES } from "../models/Appointment.js";
 import User from "../models/User.js";
 import asyncHandler from "../utils/asyncHandler.js";
-import { createAppointment } from "../services/appointmentService.js";
+import {
+  createAppointment,
+  rescheduleAppointment,
+  cancelAppointmentAsPatient,
+} from "../services/appointmentService.js";
 import { getDoctorProfileId, assertCanAccess } from "../utils/ownership.js";
 import ApiError from "../utils/ApiError.js";
 import { optionalString, throwIfErrors } from "../utils/validate.js";
@@ -77,4 +81,23 @@ export const getAppointment = asyncHandler(async (req, res) => {
   }
 
   res.status(200).json(appointment);
+});
+
+// Patient view: no patient field, and toJSON hides holdsSlot and __v
+function patientView(appointment) {
+  const view = appointment.toJSON();
+  delete view.patient;
+  return view;
+}
+
+export const rescheduleMyAppointment = asyncHandler(async (req, res) => {
+  const appointment = await rescheduleAppointment({
+    user: req.user, id: req.params.id, body: req.body,
+  });
+  res.status(200).json(patientView(appointment));
+});
+
+export const cancelMyAppointment = asyncHandler(async (req, res) => {
+  const appointment = await cancelAppointmentAsPatient({ user: req.user, id: req.params.id });
+  res.status(200).json(patientView(appointment));
 });

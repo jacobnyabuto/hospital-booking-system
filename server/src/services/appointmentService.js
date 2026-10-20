@@ -6,6 +6,7 @@ import {
   pick, requireObjectId, requireString, throwIfErrors, failValidation,
 } from "../utils/validate.js";
 import { buildDaySlots, getClinicTimezone } from "./slotService.js";
+import { assertPatientOwner } from "../utils/ownership.js";
 
 export const MAX_DAYS_AHEAD = 90;
 export const MAX_ACTIVE_APPOINTMENTS = 10;
@@ -98,4 +99,79 @@ export async function createAppointment({ user, body, now = new Date() }) {
     if (error.code === 11000) throw new ApiError(409, "That time slot is already booked");
     throw error;
   }
+}
+
+const CHANGEABLE = ["pending", "confirmed"];
+
+// Loads the appointment as a full document (so save() runs the model hook).
+// A missing record and someone else's record give the same 404.
+async function loadOwnedByPatient(id, user) {
+  const appointment = await Appointment.findById(id);
+  if (!appointment) throw new ApiError(404, "Appointment not found");
+  assertPatientOwner(appointment, user);
+  return appointment;
+}
+
+export async function rescheduleAppointment({ user, id, body, now = new Date() }) {
+  const appointment = await loadOwnedByPatient(id, user);
+
+  if (!CHANGEABLE.includes(appointment.status)) {
+    throw new ApiError(409, `A ${appointment.status} appointment cannot be changed`);
+  }
+
+  // Only startTime is accepted. status, doctor, patient and the rest are dropped.
+  const input = pick(body, ["startTime"]);
+  const startTime = parseStartTime(input.startTime);
+  if (!startTime) {
+    failValidation([{
+      field: "startTime",
+      message: "startTime must be an ISO 8601 date-time with a timezone, e.g. 2026-10-26T13:00:00.000Z",
+    }]);
+  }
+  if (startTime.getTime() === appointment.startTime.getTime()) {
+    failValidation([{ field: "startTime", message: "startTime is the same as the current time" }]);
+  }
+
+  const doctor = await Doctor.findOne({ _id: appointment.doctor, isActive: true })
+    .select("workingDays workStart workEnd slotMinutes")
+    .lean();
+  if (!doctor) throw new ApiError(404, "Doctor not found");
+
+  const problem = checkSlotRules(doctor, startTime, getClinicTimezone(), now);
+  if (problem) failValidation([{ field: "startTime", message: problem }]);
+
+  // The appointment's own current slot is excluded from the conflict checks
+  const notThis = { _id: { $ne: appointment._id }, startTime, holdsSlot: true };
+  if (await Appointment.exists({ ...notThis, doctor: appointment.doctor })) {
+    throw new ApiError(409, "That time slot is already booked");
+  }
+  if (await Appointment.exists({ ...notThis, patient: user._id })) {
+    throw new ApiError(409, "You already have an appointment at that time");
+  }
+
+  appointment.startTime = startTime;
+  appointment.endTime = new Date(startTime.getTime() + (doctor.slotMinutes || 30) * 60 * 1000);
+  // The doctor agreed to the old time, not the new one
+  if (appointment.status === "confirmed") appointment.status = "pending";
+
+  try {
+    await appointment.save();
+  } catch (error) {
+    if (error.code === 11000) throw new ApiError(409, "That time slot is already booked");
+    throw error;
+  }
+  return appointment;
+}
+
+export async function cancelAppointmentAsPatient({ user, id }) {
+  const appointment = await loadOwnedByPatient(id, user);
+
+  if (!CHANGEABLE.includes(appointment.status)) {
+    throw new ApiError(409, `A ${appointment.status} appointment cannot be cancelled`);
+  }
+
+  appointment.status = "cancelled";
+  appointment.cancelledBy = "patient";
+  await appointment.save(); // the hook sets holdsSlot to false, freeing the slot
+  return appointment;
 }
