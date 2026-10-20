@@ -1,7 +1,9 @@
 import Appointment, { APPOINTMENT_STATUSES } from "../models/Appointment.js";
+import User from "../models/User.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { createAppointment } from "../services/appointmentService.js";
-import { getDoctorProfileId } from "../utils/ownership.js";
+import { getDoctorProfileId, assertCanAccess } from "../utils/ownership.js";
+import ApiError from "../utils/ApiError.js";
 import { optionalString, throwIfErrors } from "../utils/validate.js";
 
 // The only fields ever sent to a client. holdsSlot and __v are deliberately absent.
@@ -52,4 +54,27 @@ export const listDoctorAppointments = asyncHandler(async (req, res) => {
     .lean();
 
   res.status(200).json(appointments);
+});
+
+export const getAppointment = asyncHandler(async (req, res) => {
+  // The ID format was already checked by validateObjectId in the route
+  const appointment = await Appointment.findById(req.params.id)
+    .select(`patient ${VIEW_FIELDS}`)
+    .lean();
+
+  // Same message for "missing" and "not yours"
+  if (!appointment) throw new ApiError(404, "Appointment not found");
+
+  const profileId = await getDoctorProfileId(req.user);
+  assertCanAccess(appointment, req.user, profileId);
+
+  if (req.user.role === "doctor") {
+    // Doctors get the patient's name only
+    const patient = await User.findById(appointment.patient).select("name").lean();
+    appointment.patient = { _id: appointment.patient, name: patient ? patient.name : "Unknown" };
+  } else {
+    delete appointment.patient; // patients already know it is themselves
+  }
+
+  res.status(200).json(appointment);
 });
