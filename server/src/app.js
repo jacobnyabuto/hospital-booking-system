@@ -1,5 +1,6 @@
 import express from "express";
 import helmet from "helmet";
+import cors from "cors";
 import { getDbStatus } from "./config/db.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import doctorRoutes from "./routes/doctor.routes.js";
@@ -11,6 +12,15 @@ const app = express();
 
 // 1. Security headers on every response
 app.use(helmet());
+// Allow only the configured frontend origin (no wildcard)
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    maxAge: 600,
+  })
+);
 
 // 2. Parse JSON bodies, and reject very large ones
 app.use(express.json({ limit: "10kb" }));
