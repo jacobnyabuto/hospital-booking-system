@@ -6,6 +6,7 @@ import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import doctorRoutes from "./routes/doctor.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
+import aiRoutes from "./routes/ai.routes.js";
 
 
 const app = express();
@@ -37,6 +38,7 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+app.use("/api/ai", aiRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/doctors", doctorRoutes);
