@@ -78,12 +78,12 @@ Invalid JSON or wrong shape counts as provider failure. Unknown IDs and duplicat
 
 \- 503 only when the provider failed and the fallback found nothing
 
-
+Each recommendation returned to the client is { doctorId, doctorName, specialty, reason }. Name and specialty come from MongoDB, never from the model.
 
 \## Fallback
 
 Provider failure, timeout or unusable output: a keyword-to-specialty map returns real doctors with `source: "fallback"`. No keyword match: 503 with a message suggesting the specialty filter.
-
+Provider failure with a keyword match returns 200 with source "fallback". Only a failure with no match returns 503.
 
 
 \## Privacy and logging
