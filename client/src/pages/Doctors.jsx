@@ -4,6 +4,7 @@ import DoctorCard from "../components/DoctorCard.jsx";
 import { SPECIALTIES } from "../constants/specialties.js";
 import useDebounce from "../hooks/useDebounce.js";
 import { listDoctors } from "../services/doctorService.js";
+import AiAssistant from "../components/AiAssistant.jsx";
 
 export default function Doctors() {
   const [specialty, setSpecialty] = useState("");
@@ -49,6 +50,9 @@ export default function Doctors() {
   return (
     <>
       <h1 className="mb-3">Find a doctor</h1>
+      <div className="mb-4">
+        <AiAssistant />
+      </div>
 
       <Form className="mb-4" onSubmit={(e) => e.preventDefault()}>
         <Row className="g-3">

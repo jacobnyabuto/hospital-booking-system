@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Alert, Badge, Button, Card, Form, Spinner } from "react-bootstrap";
 import useAuth from "../hooks/useAuth.js";
 import { recommendDoctors } from "../services/aiService.js";
@@ -9,6 +9,7 @@ const MAX_LENGTH = 500;
 
 export default function AiAssistant() {
   const { user, loading: authLoading } = useAuth();
+  const location = useLocation();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null); // the API's success body
@@ -57,7 +58,7 @@ export default function AiAssistant() {
         {!user ? (
           <>
             <p>Describe your concern and the assistant will suggest doctors from our list.</p>
-            <Button as={Link} to="/login" state={{ from: "/" }}>Log in to use the assistant</Button>
+            <Button as={Link} to="/login" state={{ from: location.pathname }}>Log in to use the assistant</Button>
           </>
         ) : (
           <Form onSubmit={handleSubmit} noValidate>
