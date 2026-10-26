@@ -2,7 +2,7 @@ import Doctor from "../models/Doctor.js";
 import ApiError from "../utils/ApiError.js";
 import { callProvider } from "./aiProvider.js";
 import {
-  cleanMessage, isEmergency, fallbackSpecialty, EMERGENCY_MESSAGE,
+  cleanMessage, isEmergency, fallbackSpecialty, redactPersonalInfo, EMERGENCY_MESSAGE,
 } from "./aiSafety.js";
 
 export const MAX_RECOMMENDATIONS = 3;
@@ -113,7 +113,7 @@ export async function recommendDoctor({
   const started = Date.now();
   let recommendations = null;
   try {
-    const { system, user } = buildPrompt(text, doctors);
+        const { system, user } = buildPrompt(redactPersonalInfo(text), doctors);
     const raw = parseModelOutput(await provider({ system, user }));
     if (raw) {
       const grounded = groundRecommendations(raw, byId);

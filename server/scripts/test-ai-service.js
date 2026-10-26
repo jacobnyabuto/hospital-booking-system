@@ -117,6 +117,17 @@ for (const [label, value] of [["object", { $ne: "x" }], ["empty", ""], ["501 cha
 r = await run("unusual itchy spot", never, { loadDoctors: async () => [] });
 report(r.result?.recommendations.length === 0, "no active doctors gives an empty result without calling the AI");
 
+// ---- personal data never reaches the provider ----
+let sentToProvider = "";
+await run(
+  "My SSN is 123-45-6789, email jane.doe@example.com, phone 214-555-0187 and I have an itchy rash.",
+  async ({ user }) => { sentToProvider = user; return JSON.stringify({ recommendations: [] }); }
+);
+report(!sentToProvider.includes("123-45-6789"), "SSN is not sent to the provider");
+report(!sentToProvider.includes("jane.doe@example.com"), "email is not sent to the provider");
+report(!sentToProvider.includes("555-0187"), "phone is not sent to the provider");
+report(sentToProvider.includes("itchy rash"), "the medical text is still sent");
+
 // ---- logging ----
 r = await run("a very unusual itchy patch", reply({ recommendations: [rec(1)] }));
 report(r.logs.length === 1 && /^AI recommend: source=ai ms=\d+ count=1$/.test(r.logs[0]), "log line holds only source, latency and count");

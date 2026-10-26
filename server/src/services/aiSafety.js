@@ -92,3 +92,13 @@ export function fallbackSpecialty(text) {
   }
   return best;
 }
+
+// Removes obvious personal identifiers before text is sent to the AI provider.
+// Names and street addresses cannot be detected reliably and are NOT removed.
+export function redactPersonalInfo(text) {
+  return text
+    .replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, "[email removed]")
+    .replace(/\+?\d[\d\s().-]{7,}\d/g, (match) =>
+      match.replace(/\D/g, "").length >= 9 ? "[number removed]" : match
+    );
+}

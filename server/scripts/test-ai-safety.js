@@ -1,5 +1,6 @@
 import ApiError from "../src/utils/ApiError.js";
 import {
+redactPersonalInfo,
   cleanMessage, isEmergency, fallbackSpecialty, EMERGENCY_MESSAGE, MAX_MESSAGE_LENGTH,
 } from "../src/services/aiSafety.js";
 
@@ -79,6 +80,16 @@ report(fallbackSpecialty("my baby has a fever") === "pediatrics", "a tie goes to
 report(fallbackSpecialty("heartburn after dinner") === null, "'heartburn' does not match 'heart'");
 report(fallbackSpecialty("tell me a joke") === null, "unrelated text gives null");
 report(fallbackSpecialty("RASH!!!") === "dermatology", "case and punctuation ignored");
+
+// ---- redactPersonalInfo ----
+report(!redactPersonalInfo("my ssn is 123-45-6789 and I have a rash").includes("123-45"), "SSN is removed");
+report(!redactPersonalInfo("mail me at jane.doe@example.com please").includes("@"), "email is removed");
+report(!redactPersonalInfo("call 214-555-0187 after 5").includes("0187"), "phone number is removed");
+report(!redactPersonalInfo("call (214) 555 0187").includes("555"), "phone with spaces and brackets is removed");
+report(!redactPersonalInfo("card 4111 1111 1111 1111 expires soon").includes("4111"), "long card-style number is removed");
+report(redactPersonalInfo("I am 45 years old with a rash for 2 weeks") === "I am 45 years old with a rash for 2 weeks", "ages and durations are untouched");
+report(redactPersonalInfo("blood pressure 120/80 this morning") === "blood pressure 120/80 this morning", "blood pressure is untouched");
+report(redactPersonalInfo("itchy rash on my arm") === "itchy rash on my arm", "plain text is untouched");
 
 // ---- constants ----
 report(EMERGENCY_MESSAGE.includes("911") && EMERGENCY_MESSAGE.includes("988"), "emergency message names 911 and 988");
