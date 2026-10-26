@@ -1,3 +1,140 @@
+:root {
+  --bs-primary: #0f766e;
+  --bs-primary-rgb: 15, 118, 110;
+  --bs-link-color: #0f766e;
+  --bs-link-color-rgb: 15, 118, 110;
+  --bs-link-hover-color: #115e59;
+  --bs-link-hover-color-rgb: 17, 94, 89;
+  --hb-coral: #f97316;
+  --hb-mint: #ecfdf5;
+  --hb-ink: #134e4a;
+}
+
 body {
-  background-color: #f8f9fa;
+  background-color: #f6fbfa;
+  color: #1f2937;
+}
+
+.btn-primary {
+  --bs-btn-bg: #0f766e;
+  --bs-btn-border-color: #0f766e;
+  --bs-btn-hover-bg: #115e59;
+  --bs-btn-hover-border-color: #115e59;
+  --bs-btn-active-bg: #134e4a;
+  --bs-btn-active-border-color: #134e4a;
+  --bs-btn-disabled-bg: #0f766e;
+  --bs-btn-disabled-border-color: #0f766e;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: #0f766e;
+  --bs-btn-border-color: #0f766e;
+  --bs-btn-hover-bg: #0f766e;
+  --bs-btn-hover-border-color: #0f766e;
+  --bs-btn-active-bg: #115e59;
+  --bs-btn-active-border-color: #115e59;
+}
+
+/* Coral call-to-action: dark text keeps the contrast readable */
+.btn-accent {
+  --bs-btn-color: #1f2937;
+  --bs-btn-bg: var(--hb-coral);
+  --bs-btn-border-color: var(--hb-coral);
+  --bs-btn-hover-color: #111827;
+  --bs-btn-hover-bg: #fb923c;
+  --bs-btn-hover-border-color: #fb923c;
+  --bs-btn-active-color: #111827;
+  --bs-btn-active-bg: #ea580c;
+  --bs-btn-active-border-color: #ea580c;
+  font-weight: 600;
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  color: #fff;
+  border-radius: 1rem;
+  padding: 3.5rem 1.5rem;
+  background-color: #0f766e;
+  /* Mini-step 2 adds a photo layer: url("/images/hero.jpg") */
+  background-image: linear-gradient(135deg, rgba(15, 118, 110, 0.96), rgba(8, 145, 178, 0.9));
+  background-size: cover;
+  background-position: center;
+}
+.hero h1 {
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.hero .lead {
+  max-width: 40rem;
+}
+.hero-tag {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 2rem;
+  padding: 0.25rem 0.9rem;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+/* ---------- Sections and cards ---------- */
+.section-title {
+  font-weight: 700;
+  color: var(--hb-ink);
+}
+.goal-card,
+.service-card {
+  border: 0;
+  border-radius: 1rem;
+  box-shadow: 0 2px 10px rgba(15, 118, 110, 0.1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.service-card:hover,
+.service-card:focus-within {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(15, 118, 110, 0.18);
+}
+.icon-bubble {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #fff;
+  background: var(--bubble, #0f766e);
+}
+.goals-band {
+  background: var(--hb-mint);
+  border-radius: 1rem;
+  padding: 2rem 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-card {
+    transition: none;
+  }
+  .service-card:hover {
+    transform: none;
+  }
+}
+
+/* ---------- Blurred hospital background behind every page ---------- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(246, 251, 250, 0.82), rgba(246, 251, 250, 0.9)),
+    url("/client/public/images/specialties/hospital-bg.jpg");
+  background-size: cover;
+  background-position: center;
+  filter: blur(6px);
+  transform: scale(1.05); /* hides the soft edges that blur creates */
+}
+
+/* Cards and forms stay solid so text is always readable on top of the picture */
+.card {
+  background-color: #fff;
 }

@@ -7,6 +7,7 @@ import { formatWorkingDays, formatClock } from "../utils/format.js";
 import SlotPicker from "../components/SlotPicker.jsx";
 import { formatClinicDateTime } from "../utils/dates.js";
 import BookingForm from "../components/BookingForm.jsx";
+import SpecialtyImage from "../components/SpecialtyImage.jsx";
 
 export default function DoctorDetail() {
   const { id } = useParams();
@@ -80,6 +81,9 @@ export default function DoctorDetail() {
       </p>
       <Row className="g-4">
         <Col lg={8}>
+          <div className="mb-3">
+            <SpecialtyImage specialty={doctor.specialty} height={220} rounded />
+          </div>
           <h1 className="mb-2">{doctor.fullName}</h1>
           <div className="mb-3">
             <Badge bg="info" text="dark">

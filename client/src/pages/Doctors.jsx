@@ -5,9 +5,15 @@ import { SPECIALTIES } from "../constants/specialties.js";
 import useDebounce from "../hooks/useDebounce.js";
 import { listDoctors } from "../services/doctorService.js";
 import AiAssistant from "../components/AiAssistant.jsx";
+import { useSearchParams } from "react-router-dom";
 
 export default function Doctors() {
-  const [specialty, setSpecialty] = useState("");
+    const [searchParams] = useSearchParams();
+  const initialSpecialty = searchParams.get("specialty") || "";
+  // Only accept a value that is really on our list
+  const [specialty, setSpecialty] = useState(
+    SPECIALTIES.some((s) => s.value === initialSpecialty) ? initialSpecialty : ""
+  );
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("");
   const debouncedSearch = useDebounce(search);

@@ -1,10 +1,12 @@
 import { Card, Badge, Button } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { specialtyLabel } from "../constants/specialties.js";
+import SpecialtyImage from "./SpecialtyImage.jsx";
 
 export default function DoctorCard({ doctor }) {
   return (
-    <Card className="h-100 shadow-sm">
+       <Card className="h-100 shadow-sm overflow-hidden">
+      <SpecialtyImage specialty={doctor.specialty} height={150} />
       <Card.Body className="d-flex flex-column">
         <Card.Title as="h2" className="h5">
           {doctor.fullName}
