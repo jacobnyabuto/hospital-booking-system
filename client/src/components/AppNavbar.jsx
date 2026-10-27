@@ -1,7 +1,8 @@
-import { Navbar, Nav, Container, Button } from "react-bootstrap";
+﻿import { Navbar, Nav, Container, Button } from "react-bootstrap";
 import { NavLink, useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth.js";
 import { homeForRole } from "../utils/roles.js";
+import ThemeToggle from "./ThemeToggle.jsx";
 
 export default function AppNavbar() {
   const { user, loading, logout } = useAuth();
@@ -33,11 +34,11 @@ export default function AppNavbar() {
               </Nav.Link>
             )}
           </Nav>
-          {!loading && (
-            <Nav className="align-items-md-center">
-              {user ? (
+          <Nav className="align-items-md-center gap-2 mt-2 mt-md-0">
+            {!loading &&
+              (user ? (
                 <>
-                  <Navbar.Text className="me-md-3">Hi, {user.name}</Navbar.Text>
+                  <Navbar.Text className="me-md-1">Hi, {user.name}</Navbar.Text>
                   <Button variant="outline-light" size="sm" onClick={handleLogout}>
                     Log out
                   </Button>
@@ -51,9 +52,9 @@ export default function AppNavbar() {
                     Register
                   </Nav.Link>
                 </>
-              )}
-            </Nav>
-          )}
+              ))}
+            <ThemeToggle />
+          </Nav>
         </Navbar.Collapse>
       </Container>
     </Navbar>

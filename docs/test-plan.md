@@ -110,6 +110,8 @@ Status values: Pass, Fail, Not run. Fill in Actual and Status only after running
 | S8 | None | Remove the hospital background file temporarily | Page still readable | Page readable without background | Pass |
 | S9 | Any | Browser console during A, B, C, F tests | No red errors | No red console errors | Pass |
 | S10 | Any | Server window during all tests | No Unhandled error lines | No Unhandled error lines in server window | Pass |
+| S11 | None | Click the theme button on Home, Doctors, a doctor page, Login and both dashboards | Page switches between light and dark, text readable, cards solid | | Not run |
+| S12 | None | Choose dark, refresh, then clear the hbs_theme key and refresh with the system set to light | Choice persists; with no saved choice it follows the system | | Not run |
 
 ## H. Persistence and restart
 

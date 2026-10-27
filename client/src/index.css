@@ -1,20 +1,73 @@
-:root {
+﻿:root {
   --bs-primary: #0f766e;
   --bs-primary-rgb: 15, 118, 110;
   --bs-link-color: #0f766e;
   --bs-link-color-rgb: 15, 118, 110;
   --bs-link-hover-color: #115e59;
   --bs-link-hover-color-rgb: 17, 94, 89;
+
   --hb-coral: #f97316;
+  --hb-page-bg: #f6fbfa;
+  --hb-text: #1f2937;
+  --hb-card-bg: #ffffff;
   --hb-mint: #ecfdf5;
   --hb-ink: #134e4a;
+  --hb-shadow: rgba(15, 118, 110, 0.1);
+  --hb-shadow-hover: rgba(15, 118, 110, 0.18);
+  --hb-overlay-top: rgba(246, 251, 250, 0.82);
+  --hb-overlay-bottom: rgba(246, 251, 250, 0.9);
+  --hb-hero-from: rgba(15, 118, 110, 0.96);
+  --hb-hero-to: rgba(8, 145, 178, 0.9);
+}
+
+[data-bs-theme="dark"] {
+  --bs-link-color: #5eead4;
+  --bs-link-color-rgb: 94, 234, 212;
+  --bs-link-hover-color: #99f6e4;
+  --bs-link-hover-color-rgb: 153, 246, 228;
+
+  --hb-page-bg: #0b1514;
+  --hb-text: #e5e7eb;
+  --hb-card-bg: #14201f;
+  --hb-mint: #0f2a27;
+  --hb-ink: #99f6e4;
+  --hb-shadow: rgba(0, 0, 0, 0.35);
+  --hb-shadow-hover: rgba(0, 0, 0, 0.55);
+  --hb-overlay-top: rgba(11, 21, 20, 0.86);
+  --hb-overlay-bottom: rgba(11, 21, 20, 0.93);
+  --hb-hero-from: rgba(8, 80, 75, 0.96);
+  --hb-hero-to: rgba(8, 100, 125, 0.92);
 }
 
 body {
-  background-color: #f6fbfa;
-  color: #1f2937;
+  background-color: var(--hb-page-bg);
+  color: var(--hb-text);
 }
 
+/* ---------- Blurred hospital background behind every page ---------- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--hb-overlay-top), var(--hb-overlay-bottom)),
+    url("/images/hospital-bg.jpg");
+  background-size: cover;
+  background-position: center;
+  filter: blur(6px);
+  transform: scale(1.05);
+}
+
+/* Cards stay solid so text is always readable on top of the picture */
+.card {
+  background-color: var(--hb-card-bg);
+}
+[data-bs-theme="dark"] .card img {
+  filter: brightness(0.88);
+}
+
+/* ---------- Buttons ---------- */
 .btn-primary {
   --bs-btn-bg: #0f766e;
   --bs-btn-border-color: #0f766e;
@@ -33,6 +86,16 @@ body {
   --bs-btn-hover-border-color: #0f766e;
   --bs-btn-active-bg: #115e59;
   --bs-btn-active-border-color: #115e59;
+}
+[data-bs-theme="dark"] .btn-outline-primary {
+  --bs-btn-color: #5eead4;
+  --bs-btn-border-color: #5eead4;
+  --bs-btn-hover-color: #0b1514;
+  --bs-btn-hover-bg: #5eead4;
+  --bs-btn-hover-border-color: #5eead4;
+  --bs-btn-active-color: #0b1514;
+  --bs-btn-active-bg: #99f6e4;
+  --bs-btn-active-border-color: #99f6e4;
 }
 
 /* Coral call-to-action: dark text keeps the contrast readable */
@@ -55,8 +118,7 @@ body {
   border-radius: 1rem;
   padding: 3.5rem 1.5rem;
   background-color: #0f766e;
-  /* Mini-step 2 adds a photo layer: url("/images/hero.jpg") */
-  background-image: linear-gradient(135deg, rgba(15, 118, 110, 0.96), rgba(8, 145, 178, 0.9));
+  background-image: linear-gradient(135deg, var(--hb-hero-from), var(--hb-hero-to));
   background-size: cover;
   background-position: center;
 }
@@ -85,13 +147,13 @@ body {
 .service-card {
   border: 0;
   border-radius: 1rem;
-  box-shadow: 0 2px 10px rgba(15, 118, 110, 0.1);
+  box-shadow: 0 2px 10px var(--hb-shadow);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .service-card:hover,
 .service-card:focus-within {
   transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(15, 118, 110, 0.18);
+  box-shadow: 0 8px 20px var(--hb-shadow-hover);
 }
 .icon-bubble {
   width: 3rem;
@@ -117,24 +179,4 @@ body {
   .service-card:hover {
     transform: none;
   }
-}
-
-/* ---------- Blurred hospital background behind every page ---------- */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background-image:
-    /* linear-gradient(rgba(246, 251, 250, 0.82), rgba(246, 251, 250, 0.9)), */
-    url("/images/hospital-bg.jpg");
-  background-size: cover;
-  background-position: center;
-  filter: blur(6px);
-  transform: scale(1.05); /* hides the soft edges that blur creates */
-}
-
-/* Cards and forms stay solid so text is always readable on top of the picture */
-.card {
-  background-color: #fff;
 }
