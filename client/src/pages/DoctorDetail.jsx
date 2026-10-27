@@ -5,7 +5,6 @@ import { getDoctor } from "../services/doctorService.js";
 import { specialtyLabel } from "../constants/specialties.js";
 import { formatWorkingDays, formatClock } from "../utils/format.js";
 import SlotPicker from "../components/SlotPicker.jsx";
-import { formatClinicDateTime } from "../utils/dates.js";
 import BookingForm from "../components/BookingForm.jsx";
 import SpecialtyImage from "../components/SpecialtyImage.jsx";
 

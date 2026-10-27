@@ -1,10 +1,12 @@
 import { Button, Card } from "react-bootstrap";
 import StatusBadge from "./StatusBadge.jsx";
 import { formatClinicDateTime } from "../utils/dates.js";
+import useNow from "../hooks/useNow.js";
 
 export default function DoctorAppointmentRow({ appointment, busy, onAction }) {
   const a = appointment;
-  const started = new Date(a.startTime).getTime() <= Date.now();
+   const now = useNow();
+  const started = new Date(a.startTime).getTime() <= now;
   return (
     <Card className="mb-3 shadow-sm">
       <Card.Body className="d-flex flex-wrap justify-content-between gap-3">

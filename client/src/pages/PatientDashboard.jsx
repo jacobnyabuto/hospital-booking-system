@@ -5,6 +5,7 @@ import useAuth from "../hooks/useAuth.js";
 import AppointmentRow from "../components/AppointmentRow.jsx";
 import RescheduleModal from "../components/RescheduleModal.jsx";
 import { listMyAppointments, cancelAppointment } from "../services/appointmentService.js";
+import useNow from "../hooks/useNow.js";
 
 export default function PatientDashboard() {
   const { user } = useAuth();
@@ -16,6 +17,7 @@ export default function PatientDashboard() {
   const [toReschedule, setToReschedule] = useState(null);
   const [actionError, setActionError] = useState("");
   const [busy, setBusy] = useState(false);
+const now = useNow(60000);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -32,8 +34,7 @@ export default function PatientDashboard() {
   }, [attempt]);
 
   const { upcoming, past, counts } = useMemo(() => {
-    const now = Date.now();
-    const isUpcoming = (a) =>
+        const isUpcoming = (a) =>
       (a.status === "pending" || a.status === "confirmed") && new Date(a.startTime).getTime() > now;
     const up = items.filter(isUpcoming).sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
     const rest = items.filter((a) => !isUpcoming(a));
@@ -46,7 +47,7 @@ export default function PatientDashboard() {
         cancelled: items.filter((a) => a.status === "cancelled").length,
       },
     };
-  }, [items]);
+ }, [items, now]);
 
   const replaceItem = (updated) =>
     setItems((list) => list.map((a) => (a._id === updated._id ? { ...a, ...updated } : a)));

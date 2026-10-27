@@ -1,10 +1,10 @@
-import { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AuthContext } from "./auth-context.js";
 import { setUnauthorizedHandler } from "../services/api.js";
 import {
   registerUser, loginUser, logoutUser, hasStoredToken, fetchCurrentUser,
 } from "../services/authService.js";
 
-export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
