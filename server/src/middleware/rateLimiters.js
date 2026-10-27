@@ -27,3 +27,12 @@ export const aiLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "You have used the assistant too many times. Please try again later." },
 });
+
+// Appointment routes: generous, but stops runaway scripts
+export const appointmentsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: Number(process.env.APPT_RATE_LIMIT) || 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please try again later." },
+});

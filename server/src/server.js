@@ -2,6 +2,16 @@ import "dotenv/config";
 import app from "./app.js";
 import { connectDB, disconnectDB } from "./config/db.js";
 
+// Last-resort safety net: log briefly, then exit so the host restarts a clean process
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection:", reason?.name || "unknown");
+  process.exit(1);
+});
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught exception:", error?.name || "unknown");
+  process.exit(1);
+});
+
 const PORT = process.env.PORT || 5000;
 
 async function start() {

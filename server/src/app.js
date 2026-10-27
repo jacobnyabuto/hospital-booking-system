@@ -7,6 +7,7 @@ import doctorRoutes from "./routes/doctor.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
+import { appointmentsLimiter } from "./middleware/rateLimiters.js";
 
 
 const app = express();
@@ -39,7 +40,7 @@ app.get("/api/health", (req, res) => {
   });
 });
 app.use("/api/ai", aiRoutes);
-app.use("/api/appointments", appointmentRoutes);
+app.use("/api/appointments", appointmentsLimiter, appointmentRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/doctors", doctorRoutes);
 
