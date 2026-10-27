@@ -24,7 +24,7 @@ Review date: (fill in). Scope: Express API, React client, MongoDB Atlas, AI inte
 | 2 | High (deployment) | Local test limits (`AUTH_RATE_LIMIT=200`, `AI_RATE_LIMIT=200`) would weaken production | Never set them on the host; defaults are 10 |
 | 3 | Medium | No general limit on appointment routes | Fixed: `appointmentsLimiter` (300 per 15 minutes) |
 | 4 | Medium | Known demo account emails and shared passwords | Mitigation: strong unique demo passwords on the live site, documented as demo accounts |
-| 5 | Medium | Database user had access to any database | Restrict to `hospital_booking` (Step 38) |
+| 5 | Medium | Database user had access to any database | Fixed: development user limited to readWrite on hospital_booking, production user limited to readWrite on hospital_booking_prod (verified with connectionStatus and refused cross-database reads) |
 | 6 | Medium | Atlas may need 0.0.0.0/0 for Render's changing IPs | Accepted: strong password, review at deployment |
 | 7 | Low | Test scripts write to the configured database | Run only against the development database |
 | 8 | Low | No process-level error handlers | Fixed: unhandledRejection and uncaughtException log briefly and exit |
@@ -61,3 +61,4 @@ Review date: (fill in). Scope: Express API, React client, MongoDB Atlas, AI inte
 - Use a new strong `JWT_SECRET` and database password for production.
 - Restrict the Atlas database user to `hospital_booking`.
 - Never run the seed script with production credentials unless demo accounts are intended and use strong passwords.
+
