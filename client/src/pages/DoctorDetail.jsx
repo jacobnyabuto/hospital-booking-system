@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Row, Col, Card, Badge, Button, Alert, Spinner, ListGroup } from "react-bootstrap";
 import { getDoctor } from "../services/doctorService.js";
@@ -7,38 +7,18 @@ import { formatWorkingDays, formatClock } from "../utils/format.js";
 import SlotPicker from "../components/SlotPicker.jsx";
 import BookingForm from "../components/BookingForm.jsx";
 import SpecialtyImage from "../components/SpecialtyImage.jsx";
+import useApiData from "../hooks/useApiData.js";
 
 export default function DoctorDetail() {
   const { id } = useParams();
-  const [doctor, setDoctor] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [error, setError] = useState("");
-  const [attempt, setAttempt] = useState(0);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setNotFound(false);
-    setError("");
-    setDoctor(null);
-
-    getDoctor(id, { signal: controller.signal })
-      .then((data) => {
-        setDoctor(data);
-        setLoading(false);
-      })
-      .catch((e) => {
-        if (e.name === "AbortError") return;
-        if (e.status === 404 || e.status === 400) setNotFound(true);
-        else setError(e.message);
-        setLoading(false);
-      });
-
-    return () => controller.abort();
-  }, [id, attempt]);
+   const { data: doctor, loading, error, errorStatus, reload } = useApiData(
+    (signal) => getDoctor(id, { signal }),
+    id
+  );
+  const notFound = errorStatus === 404 || errorStatus === 400;
 
   if (loading) {
     return (
@@ -66,7 +46,7 @@ export default function DoctorDetail() {
     return (
       <Alert variant="danger">
         <p className="mb-2">{error}</p>
-        <Button variant="outline-danger" size="sm" onClick={() => setAttempt((n) => n + 1)}>
+        <Button variant="outline-danger" size="sm" onClick={reload}>
           Try again
         </Button>
       </Alert>

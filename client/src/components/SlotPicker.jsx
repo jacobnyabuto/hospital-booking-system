@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert, Button, Form, Spinner } from "react-bootstrap";
+import useApiData from "../hooks/useApiData.js";
 import { getDoctorSlots } from "../services/doctorService.js";
 import {
   CLINIC_TIMEZONE, clinicDateString, addDaysToDateString, formatClinicTime,
@@ -9,38 +10,20 @@ import {
 export default function SlotPicker({ doctorId, selected, onSelect, refreshKey = 0 }) {
   const today = clinicDateString();
   const [date, setDate] = useState("");
-  const [slots, setSlots] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [attempt, setAttempt] = useState(0);
 
+  // A new date, doctor or refresh clears any chosen slot
   useEffect(() => {
     onSelect(null);
-    if (!date) {
-      setSlots([]);
-      return;
-    }
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-
-    getDoctorSlots(doctorId, date, { signal: controller.signal })
-      .then((data) => {
-        setSlots(data.slots);
-        setLoading(false);
-      })
-      .catch((e) => {
-        if (e.name === "AbortError") return;
-        setSlots([]);
-        setError(e.message);
-        setLoading(false);
-      });
-
-    return () => controller.abort();
-    // onSelect is intentionally left out: it is a state setter from the parent
+    // onSelect is a state setter from the parent
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [doctorId, date, attempt, refreshKey]);
+  }, [doctorId, date, refreshKey]);
 
+  const { data, loading, error, reload } = useApiData(
+    (signal) => getDoctorSlots(doctorId, date, { signal }),
+    `${doctorId}|${date}|${refreshKey}`,
+    { enabled: !!date }
+  );
+  const slots = data?.slots || [];
   const available = slots.filter((s) => s.available);
 
   return (
@@ -63,7 +46,7 @@ export default function SlotPicker({ doctorId, selected, onSelect, refreshKey = 
         {!loading && error && (
           <Alert variant="danger">
             <p className="mb-2">{error}</p>
-            <Button size="sm" variant="outline-danger" onClick={() => setAttempt((n) => n + 1)}>
+            <Button size="sm" variant="outline-danger" onClick={reload}>
               Try again
             </Button>
           </Alert>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Alert, Button, Col, Modal, Row, Card, Spinner } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import useAuth from "../hooks/useAuth.js";
@@ -6,32 +6,21 @@ import AppointmentRow from "../components/AppointmentRow.jsx";
 import RescheduleModal from "../components/RescheduleModal.jsx";
 import { listMyAppointments, cancelAppointment } from "../services/appointmentService.js";
 import useNow from "../hooks/useNow.js";
+import useApiData from "../hooks/useApiData.js";
 
 export default function PatientDashboard() {
   const { user } = useAuth();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [attempt, setAttempt] = useState(0);
   const [toCancel, setToCancel] = useState(null);
   const [toReschedule, setToReschedule] = useState(null);
   const [actionError, setActionError] = useState("");
   const [busy, setBusy] = useState(false);
 const now = useNow(60000);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-    listMyAppointments({ signal: controller.signal })
-      .then((data) => { setItems(data); setLoading(false); })
-      .catch((e) => {
-        if (e.name === "AbortError") return;
-        setError(e.message);
-        setLoading(false);
-      });
-    return () => controller.abort();
-  }, [attempt]);
+    const { data, setData, loading, error, reload } = useApiData(
+    (signal) => listMyAppointments({ signal }),
+    "mine"
+  );
+  const items = useMemo(() => data || [], [data]);
 
   const { upcoming, past, counts } = useMemo(() => {
         const isUpcoming = (a) =>
@@ -49,8 +38,8 @@ const now = useNow(60000);
     };
  }, [items, now]);
 
-  const replaceItem = (updated) =>
-    setItems((list) => list.map((a) => (a._id === updated._id ? { ...a, ...updated } : a)));
+   const replaceItem = (updated) =>
+    setData((list) => (list || []).map((a) => (a._id === updated._id ? { ...a, ...updated } : a)));
 
   async function confirmCancel() {
     if (busy) return;
@@ -78,7 +67,7 @@ const now = useNow(60000);
     return (
       <Alert variant="danger">
         <p className="mb-2">{error}</p>
-        <Button size="sm" variant="outline-danger" onClick={() => setAttempt((n) => n + 1)}>Try again</Button>
+        <Button size="sm" variant="outline-danger" onClick={reload}>Try again</Button>
       </Alert>
     );
   }

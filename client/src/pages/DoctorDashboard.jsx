@@ -1,34 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Alert, Button, Form, Spinner } from "react-bootstrap";
 import useAuth from "../hooks/useAuth.js";
 import DoctorAppointmentRow from "../components/DoctorAppointmentRow.jsx";
 import { listDoctorAppointments, setAppointmentStatus } from "../services/appointmentService.js";
+import useApiData from "../hooks/useApiData.js";
 
 const FILTERS = ["all", "pending", "confirmed", "completed", "cancelled"];
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [attempt, setAttempt] = useState(0);
   const [filter, setFilter] = useState("all");
   const [busyId, setBusyId] = useState(null);
   const [actionError, setActionError] = useState("");
 
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-    listDoctorAppointments({ signal: controller.signal })
-      .then((data) => { setItems(data); setLoading(false); })
-      .catch((e) => {
-        if (e.name === "AbortError") return;
-        setError(e.message);
-        setLoading(false);
-      });
-    return () => controller.abort();
-  }, [attempt]);
+   const { data, setData, loading, error, reload } = useApiData(
+    (signal) => listDoctorAppointments({ signal }),
+    "doctor-mine"
+  );
+  const items = data || [];
 
   async function handleAction(appointment, status) {
     if (busyId) return;
@@ -36,10 +25,10 @@ export default function DoctorDashboard() {
     setActionError("");
     try {
       const updated = await setAppointmentStatus(appointment._id, status);
-      setItems((list) => list.map((a) => (a._id === updated._id ? { ...a, ...updated } : a)));
+      setData((list) => (list || []).map((a) => (a._id === updated._id ? { ...a, ...updated } : a)));
     } catch (err) {
       setActionError(err.message);
-      if (err.status === 409) setAttempt((n) => n + 1); // state changed elsewhere: reload
+      if (err.status === 409) reload(); // state changed elsewhere: reload
     } finally {
       setBusyId(null);
     }
@@ -57,7 +46,7 @@ export default function DoctorDashboard() {
     return (
       <Alert variant="danger">
         <p className="mb-2">{error}</p>
-        <Button size="sm" variant="outline-danger" onClick={() => setAttempt((n) => n + 1)}>Try again</Button>
+        <Button size="sm" variant="outline-danger" onClick={reload}>Try again</Button>
       </Alert>
     );
   }

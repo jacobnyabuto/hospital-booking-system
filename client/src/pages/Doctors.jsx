@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
+﻿import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Row, Col, Form, Button, Alert, Spinner } from "react-bootstrap";
+import AiAssistant from "../components/AiAssistant.jsx";
 import DoctorCard from "../components/DoctorCard.jsx";
 import { SPECIALTIES } from "../constants/specialties.js";
+import useApiData from "../hooks/useApiData.js";
 import useDebounce from "../hooks/useDebounce.js";
 import { listDoctors } from "../services/doctorService.js";
-import AiAssistant from "../components/AiAssistant.jsx";
-import { useSearchParams } from "react-router-dom";
 
 export default function Doctors() {
-    const [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const initialSpecialty = searchParams.get("specialty") || "";
   // Only accept a value that is really on our list
   const [specialty, setSpecialty] = useState(
@@ -19,32 +20,12 @@ export default function Doctors() {
   const debouncedSearch = useDebounce(search);
   const debouncedLocation = useDebounce(location);
 
-  const [doctors, setDoctors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-
-    listDoctors(
-      { specialty, search: debouncedSearch, location: debouncedLocation },
-      { signal: controller.signal }
-    )
-      .then((data) => {
-        setDoctors(data);
-        setLoading(false);
-      })
-      .catch((e) => {
-        if (e.name === "AbortError") return; // a newer request replaced this one
-        setError(e.message);
-        setLoading(false);
-      });
-
-    return () => controller.abort();
-  }, [specialty, debouncedSearch, debouncedLocation, attempt]);
+  const { data, loading, error, reload } = useApiData(
+    (signal) =>
+      listDoctors({ specialty, search: debouncedSearch, location: debouncedLocation }, { signal }),
+    JSON.stringify([specialty, debouncedSearch, debouncedLocation])
+  );
+  const doctors = data || [];
 
   const hasFilters = specialty || search || location;
   function clearFilters() {
@@ -56,6 +37,7 @@ export default function Doctors() {
   return (
     <>
       <h1 className="mb-3">Find a doctor</h1>
+
       <div className="mb-4">
         <AiAssistant />
       </div>
@@ -119,7 +101,7 @@ export default function Doctors() {
         {!loading && error && (
           <Alert variant="danger">
             <p className="mb-2">{error}</p>
-            <Button variant="outline-danger" size="sm" onClick={() => setAttempt((n) => n + 1)}>
+            <Button variant="outline-danger" size="sm" onClick={reload}>
               Try again
             </Button>
           </Alert>
