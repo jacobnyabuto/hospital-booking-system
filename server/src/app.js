@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import { getDbStatus } from "./config/db.js";
@@ -11,6 +11,9 @@ import { appointmentsLimiter } from "./middleware/rateLimiters.js";
 
 
 const app = express();
+
+// Behind Render's proxy: trust one hop so rate limits see real client IPs
+if (process.env.NODE_ENV === "production") app.set("trust proxy", 1);
 
 // 1. Security headers on every response
 app.use(helmet());
