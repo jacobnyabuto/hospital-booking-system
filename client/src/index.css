@@ -126,8 +126,8 @@ body::before {
   inset: 0;
   z-index: -1;
   background-image:
-    linear-gradient(rgba(246, 251, 250, 0.82), rgba(246, 251, 250, 0.9)),
-    url("/client/public/images/specialties/hospital-bg.jpg");
+    /* linear-gradient(rgba(246, 251, 250, 0.82), rgba(246, 251, 250, 0.9)), */
+    url("/images/hospital-bg.jpg");
   background-size: cover;
   background-position: center;
   filter: blur(6px);
