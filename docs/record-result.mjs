@@ -8,7 +8,7 @@ if (!id || !["Pass", "Fail", "Not run"].includes(status)) {
   process.exit(1);
 }
 
-const file = new URL("./test-plan.md", import.meta.url);
+const file = new URL(id.startsWith("L") ? "./production-test.md" : "./test-plan.md", import.meta.url);
 const lines = readFileSync(file, "utf8").split(/\r?\n/);
 let hit = false;
 
@@ -29,3 +29,4 @@ if (!hit) {
 }
 writeFileSync(file, out.join("\n"));
 console.log(`Recorded ${id}: ${status}`);
+
