@@ -1,212 +1,264 @@
-﻿# Hospital Booking System
+# Hospital Booking System
 
-An AI-assisted appointment booking platform. Patients browse doctors, pick a real open time and book. Doctors confirm or decline from their own dashboard. An assistant suggests which doctor to see, without diagnosing and without booking anything.
+An AI-assisted web application for booking hospital appointments. Patients browse doctors, pick a free 30-minute slot, and manage their bookings; doctors confirm, decline, and complete appointments. An AI assistant helps patients work out which kind of doctor to see.
 
-**All doctors, patients, ratings and appointments are fictional demo data. Nothing here is medical advice.**
+> **All data is fictional.** This is a learning/capstone project. It is not a medical device, does not give medical advice, and must not be used with real patient information.
 
-| | |
+## Live links
+
+| What | Link |
 |---|---|
-| Live site | https://hospital-booking-system-zeta-nine.vercel.app |
-| Live API health check | https://hospital-booking-system-rx3p.onrender.com/api/health |
-| Repository | https://github.com/jacobnyabuto/hospital-booking-system |
+| Live site (frontend, Vercel) | https://hospital-booking-system-zeta-nine.vercel.app |
+| API health check (backend, Render) | https://hospital-booking-system-rx3p.onrender.com/api/health |
+| Source code | https://github.com/jacobnyabuto/hospital-booking-system |
 
-> The API runs on a free tier and sleeps after about 15 minutes without traffic. The first request after a quiet period can take up to a minute, and the site shows loading states meanwhile.
+> **Cold start:** the backend runs on Render's free tier and sleeps when idle. The first request after a quiet period can take up to about a minute. Open the health link first to wake it, then use the site.
 
 ## Problem and users
 
-Booking a doctor usually means phone calls, guessing which specialty to choose, and not knowing which times are really free.
+Booking a hospital appointment by phone is slow, and patients often do not know which specialist to see. This system lets people:
 
-| User | What they do |
-|---|---|
-| Visitor | Browses doctors and open times without an account |
-| Patient | Registers, books, reschedules and cancels appointments, uses the assistant |
-| Doctor | Sees only their own appointments, confirms, declines, cancels and completes them |
+- **Patients** find a doctor, see real free slots, book, reschedule, and cancel online, and ask an AI assistant which specialty fits their symptoms.
+- **Doctors** see their own appointments and confirm, decline, or complete them.
+
+There is no admin role. Doctor accounts are created by a seed script, not through public registration.
 
 ## Features
 
-- Register, log in, log out, and protected pages with separate patient and doctor roles
-- Doctor directory with filters by specialty, name and location, plus detailed profiles
-- Real 30-minute slots in the clinic time zone (America/Chicago), with double booking prevented by a database rule
-- Patient dashboard: counts, upcoming and past appointments, reschedule and cancel
-- Doctor dashboard: confirm, decline, cancel and complete, showing the patient's name and reason only
-- AI doctor assistant (see below)
-- Responsive layout, light and dark themes, keyboard and screen-reader friendly forms
+- Register, log in, log out, and a protected profile (JWT authentication).
+- Two roles, **patient** and **doctor**, enforced on the server.
+- Browse and filter doctors by specialty, name, and location.
+- Doctor detail page with specialty imagery, fee, rating, and working hours.
+- Available 30-minute slots generated from each doctor's working hours in the clinic time zone (America/Chicago).
+- Create, view, reschedule, and cancel appointments (patient).
+- Confirm, decline, and complete appointments (doctor).
+- No double booking, enforced by a database index.
+- Patient and doctor dashboards.
+- **AI doctor recommendation** (see below).
+- Responsive Bootstrap UI with light and dark mode.
 
-## The AI feature
+## AI feature
 
-Describe a concern in plain words and the assistant suggests up to three **real doctors from the database**.
+On the doctors page, a patient describes how they feel in plain words. The server returns one to three suggested doctors with a short reason for each.
 
-1. The server validates and cleans the text, then checks it against a fixed list of emergency phrases. A match returns an emergency message and **no AI call is made**.
-2. Obvious personal identifiers (emails, phone numbers, long ID numbers) are removed.
-3. Only the cleaned text and four fields per doctor (id, name, specialty, location) are sent to the AI provider.
-4. The reply must be valid JSON. Every doctor id is checked against MongoDB, and anything invented is dropped.
-5. If the provider fails or times out, a keyword-based fallback suggests doctors by specialty.
+How it works:
 
-Safeguards: login required, 10 requests per hour per user, 500-character limit, an always-visible disclaimer, and no automatic booking. Results are in `docs/ai-evaluation.md`.
+1. The message is cleaned and length-checked (1 to 500 characters).
+2. Emergency wording (for example chest pain or trouble breathing) is detected **without calling the AI**. The patient is told to call 911 (or 988 for crisis support) and no doctors are suggested.
+3. Obvious personal identifiers (emails, phone numbers) are redacted before text leaves the server.
+4. The doctors in the database are sent to the AI provider (Groq) with a strict instruction to answer in JSON.
+5. The reply is parsed and **grounded**: every doctor ID must exist in MongoDB, and names and specialties come from our data, never from the model.
+6. If the provider times out (8 seconds) or returns something unusable, a keyword-based fallback is used. A friendly error is returned only if nothing matches.
 
-**Limits.** The emergency phrase list is a safety net, not a medical device, and can miss urgent wording. Names and street addresses are not removed before the provider call, so use fictional details. The assistant never diagnoses.
+Safeguards: the API key never leaves the server, per-user rate limiting, prompt-injection tests, and a disclaimer on every result.
+
+**Limits:** the AI suggests a *type of doctor*. It does not diagnose, prescribe, or replace professional care.
 
 ## Screenshots
 
-| Home | Doctors |
+| | |
 |---|---|
-| ![Home](docs/screenshots/home-desktop.jpg) | ![Doctors](docs/screenshots/doctors-list.jpg) |
-
-| Booking | AI suggestions |
-|---|---|
-| ![Booking](docs/screenshots/booking-success.jpg) | ![AI](docs/screenshots/ai-results.jpg) |
-
-| Patient dashboard | Doctor dashboard |
-|---|---|
-| ![Patient](docs/screenshots/patient-dashboard.jpg) | ![Doctor](docs/screenshots/doctor-dashboard.jpg) |
-
-| Emergency message | Mobile |
-|---|---|
-| ![Emergency](docs/screenshots/ai-emergency.jpg) | ![Mobile](docs/screenshots/home-mobile.jpg) |
+| ![Home, desktop](docs/screenshots/home-desktop.jpg) | ![Home, mobile](docs/screenshots/home-mobile.jpg) |
+| ![Doctors list](docs/screenshots/doctors-list.jpg) | ![AI results](docs/screenshots/ai-results.jpg) |
+| ![AI emergency response](docs/screenshots/ai-emergency.jpg) | ![Booking success](docs/screenshots/booking-success.jpg) |
+| ![Patient dashboard](docs/screenshots/patient-dashboard.jpg) | ![Doctor dashboard](docs/screenshots/doctor-dashboard.jpg) |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    B["Browser: React site on Vercel"] -->|"HTTPS and JSON, Bearer token"| A["Express API on Render"]
-    A -->|"Mongoose over TLS"| D[("MongoDB Atlas")]
-    A -->|"HTTPS, key kept on the server"| G["Groq AI API"]
+  U[Browser<br/>React + Vite + Bootstrap<br/>Vercel] -->|HTTPS + JWT| A[Express API<br/>Render]
+  A -->|Mongoose| D[(MongoDB Atlas)]
+  A -->|server-side only| G[Groq AI provider]
 ```
 
-Three tiers: the React app never talks to the database or the AI provider. Secrets live only in the API's environment.
+A three-tier design: presentation (React), application (Express), and data (MongoDB). The AI provider is only ever called from the server.
 
 ## Technology
 
-| Layer | Choice |
+| Layer | Tools |
 |---|---|
-| Frontend | React 19, Vite, React-Bootstrap, React Router |
-| Backend | Node.js 22, Express 5 |
-| Database | MongoDB Atlas with Mongoose |
-| Security | bcryptjs, JSON Web Tokens, helmet, CORS with one exact origin, express-rate-limit |
-| Dates | luxon, for the clinic time zone |
-| AI | Groq API, model openai/gpt-oss-20b |
-| Hosting | Vercel (site), Render free tier (API), Atlas free tier (database) |
+| Frontend | React, Vite, JavaScript, React Router, Bootstrap, React-Bootstrap, Bootstrap Icons |
+| Backend | Node.js, Express 5, Mongoose, JSON Web Tokens, bcryptjs, helmet, cors, express-rate-limit, luxon |
+| Database | MongoDB Atlas (free M0 cluster) |
+| AI | Groq (model configured by environment variable) |
+| Hosting | Vercel (frontend), Render (backend), Atlas (database) |
 
 ## Project structure
 
 ```
 hospital-booking-system/
-  client/                React app
-    src/components/      cards, forms, slot picker, AI assistant, navbar
-    src/pages/           home, doctors, doctor detail, login, register, dashboards
-    src/services/        the single API layer and per-feature services
-    src/context/         authentication state
-    src/hooks/           data fetching, debounce, theme, clock
-    public/images/       specialty pictures and background
-  server/
-    src/config/          database connection
-    src/models/          User, Doctor, Appointment
-    src/routes/          URL maps
-    src/controllers/     request handling
-    src/services/        slots, booking rules, AI pipeline
-    src/middleware/      auth, errors, rate limits, ID checks
-    src/utils/           validation, ownership, tokens
-    scripts/             seed script and test scripts
-  docs/                  API and AI contracts, test results, security review
+├── client/                 React app
+│   ├── public/images/      hospital and specialty pictures
+│   ├── src/
+│   │   ├── components/     navbar, cards, slot picker, AI assistant ...
+│   │   ├── pages/          Home, Doctors, DoctorDetail, dashboards, Login ...
+│   │   ├── context/        authentication context
+│   │   ├── hooks/          useApiData, useDebounce, useNow, useTheme
+│   │   ├── services/       API calls
+│   │   └── utils/          dates, formatting, roles
+│   └── vercel.json         single-page-app rewrite
+├── server/                 Express API
+│   ├── src/
+│   │   ├── models/         User, Doctor, Appointment
+│   │   ├── routes/         auth, doctors, appointments, ai
+│   │   ├── controllers/
+│   │   ├── middleware/     auth, errors, rate limits, ID validation
+│   │   ├── services/       slots, appointments, AI pipeline
+│   │   └── utils/
+│   └── scripts/            seed, unit and live tests, AI evaluation
+├── docs/                   API contract, test plan, security review, screenshots
+└── README.md
 ```
 
 ## Run it locally
 
-**Prerequisites:** Node.js 22 LTS or newer, Git, a free MongoDB Atlas cluster with a database user and your IP allowed, and optionally a Groq API key (without it, the assistant uses its keyword fallback).
+Requirements: Node.js 20 or newer, a MongoDB Atlas (or local) database, and a free Groq API key.
 
-```powershell
-git clone https://github.com/jacobnyabuto/hospital-booking-system.git
-cd hospital-booking-system
-
-# API
+```bash
+# 1. Backend
 cd server
-npm ci
-Copy-Item .env.example .env      # then fill in your own values
-npm run seed                     # creates 6 demo doctors and 1 demo patient (type yes)
-npm run dev                      # http://localhost:5000
+npm install
+cp .env.example .env        # Windows PowerShell: Copy-Item .env.example .env
+# edit .env and fill in the values (see the table below)
+npm run seed                # creates the demo doctors and a demo patient
+npm run dev                 # http://localhost:5000
 
-# Website, in a second terminal
+# 2. Frontend (new terminal)
 cd client
-npm ci
-Copy-Item .env.example .env
-npm run dev                      # http://localhost:5173
+npm install
+cp .env.example .env
+npm run dev                 # http://localhost:5173
 ```
 
-### Environment variables (names only, never commit values)
+### Environment variables
 
-| Where | Names |
-|---|---|
-| `server/.env` | PORT, NODE_ENV, MONGODB_URI, JWT_SECRET, JWT_EXPIRES_IN, CLIENT_ORIGIN, CLINIC_TIMEZONE, SEED_DOCTOR_PASSWORD, SEED_PATIENT_PASSWORD, AI_PROVIDER, AI_MODEL, AI_API_KEY, AI_TIMEOUT_MS, AI_RATE_LIMIT, AUTH_RATE_LIMIT, APPT_RATE_LIMIT |
-| `client/.env` | VITE_API_BASE_URL (a public address, never a secret) |
+Only names are listed. Real values go in `server/.env` and `client/.env`, which Git ignores. Never commit them.
 
-The seed script refuses to run when `NODE_ENV` is production.
+| File | Variable | Purpose |
+|---|---|---|
+| server | `PORT` | Port the API listens on |
+| server | `NODE_ENV` | `development` or `production` |
+| server | `MONGODB_URI` | Database connection string (least-privilege user) |
+| server | `JWT_SECRET` | Long random string used to sign tokens |
+| server | `JWT_EXPIRES_IN` | Token lifetime, for example `1d` |
+| server | `CLIENT_ORIGIN` | The one allowed frontend origin (CORS) |
+| server | `CLINIC_TIMEZONE` | Clinic time zone, `America/Chicago` |
+| server | `SEED_DOCTOR_PASSWORD` | Password the seed script gives doctor accounts |
+| server | `SEED_PATIENT_PASSWORD` | Password the seed script gives the demo patient |
+| server | `AI_PROVIDER` | `groq` |
+| server | `AI_MODEL` | Model name |
+| server | `AI_API_KEY` | Provider key (server only) |
+| server | `AI_TIMEOUT_MS` | Provider timeout, `8000` |
+| server | `AI_RATE_LIMIT` | AI requests per user per window |
+| server | `AUTH_RATE_LIMIT` | Login/register attempts per window |
+| server | `APPT_RATE_LIMIT` | Appointment requests per window |
+| client | `VITE_API_BASE_URL` | API address, for example `http://localhost:5000/api` |
 
 ## Demo accounts
 
-On the live site, reviewers can use these fictional accounts. **Passwords are provided in the submission document, not in this public repository.**
+Fictional accounts for trying the live site. Passwords are **not** published here; they are in the project submission document.
 
 | Role | Email |
 |---|---|
 | Patient | demo.patient@hospital-demo.test |
-| Doctors | alan.rivera@, priya.nair@, marcus.bell@, elena.rossi@, samir.haddad@, grace.okoye@ (all hospital-demo.test) |
-
-You can also register your own patient account.
+| Doctor | alan.rivera@hospital-demo.test |
+| Doctor | priya.nair@hospital-demo.test |
+| Doctor | marcus.bell@hospital-demo.test |
+| Doctor | elena.rossi@hospital-demo.test |
+| Doctor | samir.haddad@hospital-demo.test |
+| Doctor | grace.okoye@hospital-demo.test |
 
 ## API summary
 
-Full contract: `docs/api-contract.md` and `docs/hospital-booking.postman_collection.json`.
+All routes are under `/api`. Protected routes need `Authorization: Bearer <token>`.
 
-| Area | Endpoints |
-|---|---|
-| Health | GET /api/health |
-| Auth | POST /api/auth/register, POST /api/auth/login, GET and PATCH /api/auth/me |
-| Doctors | GET /api/doctors, GET /api/doctors/:id, GET /api/doctors/:id/slots |
-| Appointments | POST, GET /mine, GET /doctor/mine, GET /:id, PATCH /:id, PATCH /:id/status, DELETE /:id under /api/appointments |
-| AI | POST /api/ai/recommend-doctor |
+| Method | Route | Access | Purpose |
+|---|---|---|---|
+| GET | `/health` | public | Service and database status |
+| POST | `/auth/register` | public | Create a patient account |
+| POST | `/auth/login` | public | Log in, receive a token |
+| GET | `/auth/me` | logged in | Current user |
+| PATCH | `/auth/me` | logged in | Update own profile |
+| GET | `/doctors` | public | List and filter doctors |
+| GET | `/doctors/:id` | public | One doctor |
+| GET | `/doctors/:id/slots?date=YYYY-MM-DD` | public | Free and taken slots |
+| POST | `/appointments` | patient | Book a slot |
+| GET | `/appointments/mine` | patient | Own appointments |
+| GET | `/appointments/doctor/mine` | doctor | Own schedule |
+| GET | `/appointments/:id` | owner | One appointment |
+| PATCH | `/appointments/:id` | patient owner | Reschedule |
+| DELETE | `/appointments/:id` | patient owner | Cancel |
+| PATCH | `/appointments/:id/status` | doctor owner | Confirm, decline, complete |
+| POST | `/ai/recommend-doctor` | logged in | AI doctor suggestion |
 
-Errors always use one shape: `{ "error": "...", "details": [...] }`.
+Full request and response shapes are in [`docs/api-contract.md`](docs/api-contract.md) and [`docs/ai-contract.md`](docs/ai-contract.md). A Postman collection is in `docs/`.
+
+## Security highlights
+
+- Passwords hashed with bcrypt; password hashes are never returned by the API.
+- JWT signature algorithm pinned; the user's role is read from the database, not trusted from the token.
+- Ownership checks: a user asking for someone else's appointment gets the same 404 as for a missing one.
+- The patient on a booking always comes from the token, never from the request body.
+- Input validation on every route, and operator-injection attempts are rejected.
+- Rate limits on login, AI, and appointment routes.
+- helmet security headers; CORS allows exactly one origin and no wildcard.
+- Secrets live only in environment variables; `.env` files are ignored by Git.
+- Least-privilege database users: the development user cannot read the production database and the production user cannot read the development one.
+
+See [`docs/security-review.md`](docs/security-review.md).
 
 ## Testing
 
-From `server`, with a **development** database configured:
-
-```powershell
-npm run test:unit     # 7 files: models, validation, slots, ownership, booking rules, AI safety and service
-npm run test:live     # 6 files against a running local API
+```bash
+cd server
+npm run test:unit          # models, validation, slots, ownership, booking rules
+npm run test:live          # runs against a locally running server
 node scripts/test-ai-live.js
+node scripts/evaluate-ai.js   # writes docs/ai-evaluation.md
 ```
 
-**Never run these against a production database.** They create and delete data.
+For the live tests, start the server first (`npm run dev`). The test results are recorded in [`docs/test-plan.md`](docs/test-plan.md), and the checks run against the deployed site are in [`docs/production-test.md`](docs/production-test.md).
 
-Evidence: `docs/test-plan.md` (manual and automated results), `docs/production-test.md` (smoke test on the deployed site), `docs/ai-evaluation.md` (twelve AI cases), `docs/security-review.md`.
+> **Never run the test suites, the AI evaluation, or the plain seed script against the production database.** They create and delete data.
 
 ## Deployment
 
-| Piece | Setup |
-|---|---|
-| Database | Atlas, separate production database and a user limited to that database |
-| API | Render web service, root directory `server`, build `npm ci`, start `npm start`, health check `/api/health`, Node 22 |
-| Site | Vercel, root directory `client`, Vite preset, `VITE_API_BASE_URL` set, SPA rewrite in `client/vercel.json` |
-| Link between them | `CLIENT_ORIGIN` on the API equals the exact site address |
+| Part | Platform | Key settings |
+|---|---|---|
+| Database | MongoDB Atlas M0 | Separate least-privilege users for development and production; network access limited to the hosting provider's ranges |
+| Backend | Render (free web service) | Root directory `server`; build `npm ci`; start `npm start`; health check `/api/health`; `NODE_VERSION=22`; environment variables set in the dashboard |
+| Frontend | Vercel | Root directory `client`; Vite preset; `VITE_API_BASE_URL` set to the Render API; `client/vercel.json` rewrites all paths to `index.html` |
+
+In production the API trusts the platform proxy (`trust proxy`), binds to `0.0.0.0`, and uses the `PORT` that Render provides.
 
 ## Known limitations
 
-- One clinic time zone, 30-minute slots, no waiting list, no email or SMS reminders
-- No real payments, insurance checks, video visits or chat. Ratings are demo data
-- The login token is kept in browser storage, which an injected script could read. Tokens last one day, and logging out only removes the token from the browser
-- Rate limits are held in memory and reset when the API restarts
-- Free-tier hosting: the API sleeps when idle, and Atlas allows shared Render address ranges
-- The AI sends cleaned text to a third-party provider, and the emergency phrase list can miss or over-trigger
-- Doctor lists are not paginated, which is fine for six doctors
+- Free-tier backend sleeps when idle, so the first request is slow.
+- Clinic time zone is fixed at America/Chicago; slots are always 30 minutes.
+- No email or SMS notifications.
+- No admin role or doctor approval flow; doctors come only from the seed script.
+- No password reset.
+- Tokens are kept in browser local storage.
+- The AI can be wrong and is limited to suggesting a doctor type.
+- No payments or insurance processing.
 
 ## Future improvements
 
-Email and SMS reminders, real insurance verification and payments, patient reviews, a waiting list, multiple clinic time zones, secure messaging, and pagination.
+- Email/SMS reminders and a password reset flow.
+- An admin role for managing doctors and schedules.
+- Video consultations, in-app chat, and secure document sharing.
+- Payments and insurance checks.
+- Multiple clinics and time zones.
+- Moving the token to an httpOnly cookie with CSRF protection.
+- Automated browser (end-to-end) tests and a CI pipeline.
 
 ## Responsible AI statement
 
-The assistant is advisory only. It does not diagnose, prescribe, state availability or prices, or create bookings. Every suggestion is checked against real data, emergency wording bypasses the model, and the interface always reminds users to review a doctor's profile and to call emergency services in an emergency. This is a demonstration, so use fictional details only.
+The AI feature is an assistant for choosing a type of doctor, not a clinician. Emergencies are detected by fixed rules before any AI call. Personal identifiers are redacted before text is sent to the provider. Model output is never trusted directly: it is validated and matched against real database records. Every result carries a disclaimer, and the system was tested against prompt-injection and unrelated requests. All data in this project is fictional.
 
 ## Author
 
-GitHub: [@jacobnyabuto](https://github.com/jacobnyabuto)
+Jacob Nyabuto, [@jacobnyabuto](https://github.com/jacobnyabuto)
+
+Built as a full-stack AI capstone project.
