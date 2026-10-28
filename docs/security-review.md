@@ -62,3 +62,25 @@ Review date: (fill in). Scope: Express API, React client, MongoDB Atlas, AI inte
 - Restrict the Atlas database user to `hospital_booking`.
 - Never run the seed script with production credentials unless demo accounts are intended and use strong passwords.
 
+
+## Production deployment status (October 27, 2026)
+
+| Area | State |
+|---|---|
+| Hosting | Frontend on Vercel, API on Render (free tier), database on MongoDB Atlas |
+| Node version | Pinned to 22 on Render with the NODE_VERSION variable |
+| Proxy | `trust proxy` is set to 1 hop when NODE_ENV is production, so rate limits see real client addresses |
+| Rate limits in production | Login and register: 30 attempts per 15 minutes per IP. AI assistant: 10 per hour per user. Appointments: 300 per 15 minutes. The local test values (200) are not set on the host |
+| CORS | The API allows exactly one origin, the production Vercel address. No wildcard and no cookies |
+| Secrets | Production uses its own JWT secret, its own database password and its own AI key. None are in the repository, and the production build was searched for secret-like text |
+| Database users | Development user: readWrite on hospital_booking only. Production user: readWrite on hospital_booking_prod only. Both verified with a connection-status check and a refused cross-database read |
+| Seeding | The seed script refuses to run when NODE_ENV is production. Production demo accounts were seeded once from a local session with new passwords |
+| Atlas network access | The developer's address plus two shared regional ranges published by Render |
+
+### Accepted risks specific to the deployment
+
+1. **Shared network ranges.** Atlas allows Render's outbound ranges, which are shared by other Render customers in the region. A dedicated address needs a paid plan. The strong password and the least-privilege user are the real protection.
+2. **Ranges can change.** Render moved to new outbound ranges in November 2025. If the API stops connecting to the database, re-copy the ranges from the Render dashboard (Connect, then Outbound) into Atlas.
+3. **Free-tier behaviour.** The API sleeps after about 15 minutes of inactivity, and the first request afterwards can take up to a minute. In-memory rate limits reset when it restarts.
+4. **Public demo accounts.** The demo patient and doctor accounts exist in production so reviewers can try both roles. Their passwords are not published in the repository.
+5. **Credential hygiene.** Database passwords were rotated during setup after some values appeared in terminal output.
